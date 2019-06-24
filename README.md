@@ -1,6 +1,6 @@
 # tictAItoe
 Small tic-tac-toe game made with pygame that lets you play against a friend or against an AI trained with previous player inputs.
-The database of training samples is located in the xvalues.txt file, and the labels are in the yvalues.txt file. A default database with ~200 training examples comes included.
+The database of training samples is located in the xvalues.txt file, and the labels are in the yvalues.txt file. An example database with ~200 training examples comes included.
 
 The AI is composed by a neural network with the following architecture:
 
