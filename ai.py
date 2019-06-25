@@ -1,13 +1,13 @@
-from keras.utils import to_categorical
-from keras.models import Sequential
+import matplotlib.pyplot as plt
+import numpy as np
 from keras.layers import Dense
 from keras.losses import categorical_crossentropy
+from keras.models import Sequential
 from keras.optimizers import Adam
-import numpy as np
-import matplotlib.pyplot as plt
+from keras.utils import to_categorical
 
 
-def createModel():
+def create_model():
     model = Sequential()
     model.add(Dense(10, input_shape=(9,), activation="relu"))
     model.add(Dense(10, activation="relu"))
@@ -22,24 +22,24 @@ def createModel():
     return model
 
 
-def trainModel(model, epochs):
+def train_model(model, epochs):
     x_train = np.loadtxt("xvalues.txt")
     print(x_train.shape)
     y_train = to_categorical(np.loadtxt("yvalues.txt"))
 
-    modelHistory = model.fit(x_train, y_train, epochs=epochs, verbose=0, validation_split=0.2, shuffle=True)
+    model_history = model.fit(x_train, y_train, epochs=epochs, verbose=0, validation_split=0.2, shuffle=True)
 
-    return model, modelHistory
+    return model, model_history
 
 
-def makePrediction(model, x):
+def make_prediction(model, x):
     return model.predict(x)
 
 
-def plotTraining(modelHistory):
+def plot_training(model_history):
     # summarize history for accuracy
-    plt.plot(modelHistory.history['acc'])
-    plt.plot(modelHistory.history['val_acc'])
+    plt.plot(model_history.history['acc'])
+    plt.plot(model_history.history['val_acc'])
     plt.title('model accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
@@ -47,8 +47,8 @@ def plotTraining(modelHistory):
     plt.show()
 
     # summarize history for loss
-    plt.plot(modelHistory.history['loss'])
-    plt.plot(modelHistory.history['val_loss'])
+    plt.plot(model_history.history['loss'])
+    plt.plot(model_history.history['val_loss'])
     plt.title('model loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
