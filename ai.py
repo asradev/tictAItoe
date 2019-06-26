@@ -1,56 +1,75 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from keras.layers import Dense
-from keras.losses import categorical_crossentropy
-from keras.models import Sequential
-from keras.optimizers import Adam
-from keras.utils import to_categorical
+from math import inf as infinity
 
 
-def create_model():
-    model = Sequential()
-    model.add(Dense(10, input_shape=(9,), activation="relu"))
-    model.add(Dense(10, activation="relu"))
-    model.add(Dense(10, activation="relu"))
-    model.add(Dense(9, activation="softmax"))
+# checks the play grid to see if the game has ended
+def check_victory(g):
+    v = 0
 
-    model.compile(loss=categorical_crossentropy,
-                  optimizer=Adam(),
-                  metrics=['accuracy'])
-    print(model.summary())
+    # check if all spaces have been selected
+    if g.min() != 0:
+        v = -1  # the game is a draw
 
-    return model
+    # check if there is any horizontal, vertical or diagonal line
+    win_state = [
+        [g[0][0], g[0][1], g[0][2]],
+        [g[1][0], g[1][1], g[1][2]],
+        [g[2][0], g[2][1], g[2][2]],
+        [g[0][0], g[1][0], g[2][0]],
+        [g[0][1], g[1][1], g[2][1]],
+        [g[0][2], g[1][2], g[2][2]],
+        [g[0][0], g[1][1], g[2][2]],
+        [g[2][0], g[1][1], g[0][2]],
+    ]
 
-
-def train_model(model, epochs):
-    x_train = np.loadtxt("xvalues.txt")
-    print(x_train.shape)
-    y_train = to_categorical(np.loadtxt("yvalues.txt"))
-
-    model_history = model.fit(x_train, y_train, epochs=epochs, verbose=0, validation_split=0.2, shuffle=True)
-
-    return model, model_history
-
-
-def make_prediction(model, x):
-    return model.predict(x)
+    if [1, 1, 1] in win_state:
+        return 1  # white wins
+    elif [2, 2, 2] in win_state:
+        return 2  # black wins
+    return v
 
 
-def plot_training(model_history):
-    # summarize history for accuracy
-    plt.plot(model_history.history['acc'])
-    plt.plot(model_history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+# heuristic for the minimax algorithm
+def evaluate(state):
+    if check_victory(state) == 1:
+        score = +1
+    elif check_victory(state) == 2:
+        score = -1
+    else:
+        score = 0
 
-    # summarize history for loss
-    plt.plot(model_history.history['loss'])
-    plt.plot(model_history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    return score
+
+
+def minimax(state, depth, white_turn):
+    if white_turn:
+        best = [-1, -1, -infinity]
+    else:
+        best = [-1, -1, +infinity]
+
+    if depth == 9:
+        return [1, 1, 0]  # always pick the middle cell at the start of the game
+
+    if depth == 0 or evaluate(state) != 0:
+        score = evaluate(state)
+        return [-1, -1, score]
+
+    # iterate through every empty cell
+    for i in range(state.shape[0]):
+        for j in range(state.shape[1]):
+            if state[i][j] == 0:
+                if white_turn:
+                    state[i][j] = 1
+                else:
+                    state[i][j] = 2
+                score = minimax(state, depth - 1, not white_turn)
+                state[i][j] = 0
+                score[0], score[1] = i, j
+
+                if white_turn:
+                    if score[2] > best[2]:
+                        best = score  # max value
+                else:
+                    if score[2] < best[2]:
+                        best = score  # min value
+
+    return best

@@ -4,6 +4,7 @@ import random
 import numpy as np
 import pygame as pg
 
+import nn
 import ai
 
 
@@ -63,6 +64,12 @@ def centered_rect(x, y, w, h):
     return rect
 
 
+# updates the AI type to play against
+def change_AI(text):
+    global aiType
+    aiType = text
+
+
 # updates the global gameState with the text provided
 def update_gamestate(text):
     global gameState
@@ -72,55 +79,17 @@ def update_gamestate(text):
 
 # restarts the game
 def restart():
-    global grid, victory, white_turn, player_turn, player_first, model, modelHistory, modelTrained, trainingCount
+    global grid, victory, white_turn, player_turn, player_first, model, modelHistory, modelTrained, trainingCount, best
     grid = np.zeros((grid.shape[0], grid.shape[1]))
     victory = 0
     white_turn = True
     player_turn = bool(random.getrandbits(1))
     player_first = player_turn
+    best = None  # used for playing against the minimax AI
 
     if logging and (modelTrained or not modelTrained and trainingCount >= 50):
-        model, modelHistory = ai.train_model(model, 100)
+        model, modelHistory = nn.train_model(model, 100)
         modelTrained = True
-
-
-# checks the play grid to see if the game has ended
-def check_victory(g):
-    v = 0
-
-    # check if all spaces have been selected
-    if g.min() != 0:
-        v = -1  # the game is a draw
-
-    # check if there is an horizontal line
-    for i in range(g.shape[0]):
-        aux = True
-        for j in range(1, g.shape[1]):
-            if g[i][j] != g[i][0]:
-                aux = False
-                break
-        if aux:
-            v = g[i][0]
-            break
-
-    # check if there is a vertical line
-    for j in range(g.shape[1]):
-        aux = True
-        for i in range(1, g.shape[0]):
-            if g[i][j] != g[0][j]:
-                aux = False
-                break
-        if aux:
-            v = g[0][j]
-            break
-
-    # check if there is a diagonal line
-    if g[0][0] == g[1][1] == g[2][2] and g[0][0] != 0:
-        v = g[0][0]
-    if g[2][0] == g[1][1] == g[0][2] and g[2][0] != 0:
-        v = g[2][0]
-
-    return v
 
 
 # display the play grid
@@ -141,7 +110,7 @@ def display_grid(grid, screen, cellMargin, grid_W, grid_H, margin_X, margin_Y):
 
 if __name__ == '__main__':
     pg.init()
-    model = ai.create_model()
+    model = nn.create_model()
     trainingCount = 0
     modelTrained = False
     logging = True
@@ -150,7 +119,7 @@ if __name__ == '__main__':
         with open('xvalues.txt') as file:
             trainingCount = sum(1 for line in file)
             if trainingCount >= 50:
-                model, modelHistory = ai.train_model(model, 500)
+                model, modelHistory = nn.train_model(model, 500)
                 modelTrained = True
 
     size = width, height = 1024, 600  # size of the screen
@@ -165,6 +134,14 @@ if __name__ == '__main__':
         gameState = "aiGame"        -> Game against the AI
     '''
     gameState = "title"
+
+    '''
+        The possible aiTypes are the following:
+        
+        aiType = "nn"       -> AI based on a neural-network that learns with previous player inputs
+        aiType = "minimax"  -> AI based on the minimax algorithm, intended to be unbeatable
+    '''
+    aiType = "nn"
 
     '''
         The possible victory values are the following:
@@ -231,28 +208,41 @@ if __name__ == '__main__':
                         trainingCount = trainingCount + 1
                         white_turn = not white_turn  # The turn passes to the other player
                         player_turn = not player_turn  # The turn passes to the AI
-                        victory = check_victory(grid)  # Check if the game has ended
-
+                        victory = ai.check_victory(grid)  # Check if the game has ended
         if gameState == "title":
-            display_text("tictAItoe", largeFont, (0, 0, 255), width // 2, height // 3, screen)
+            display_text("tictAItoe", largeFont, (0, 0, 255), width // 2, height // 4, screen)
 
-            if modelTrained:
-                update_button("play against the AI", centered_rect(width // 2, height // 2, 175, 50), (0, 195, 255),
+            if aiType == "nn":
+                if modelTrained:
+                    update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
+                                  (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen,
+                                  action=update_gamestate, arg="aiGame")
+                    update_button("plot training results", centered_rect(width // 2 + 150, height // 2 + 120, 175, 50),
+                                  (120, 0, 255), (140, 40, 255), white, black, mediumFont, screen,
+                                  action=nn.plot_training, arg=modelHistory)
+                else:
+                    display_text("there are not enough training samples to train the network!", mediumFont,
+                                 white, width // 2, height // 2 - 30, screen)
+                    display_text("to play against the AI, play against a friend until " + str(50 - trainingCount) +
+                                 " more moves are made.", mediumFont, white, width // 2, height // 2 - 10, screen)
+                display_text("AI based on a neural network, will play better as the training samples grow in size.",
+                             mediumFont, white, width // 2, height - 65, screen)
+            if aiType == "minimax":
+                update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50), (0, 195, 255),
                               (18, 206, 255), white, black, mediumFont, screen, action=update_gamestate, arg="aiGame")
-                update_button("plot training results", centered_rect(width // 2, height // 2 + 180, 175, 50),
-                              (120, 0, 255), (140, 40, 255), white, black, mediumFont, screen, action=ai.plot_training,
-                              arg=modelHistory)
-            else:
-                display_text("there are not enough training examples to train the network!", mediumFont,
-                             white, width // 2, height // 2 - 30, screen)
-                display_text("to play against the AI, play against a friend until " + str(50 - trainingCount) +
-                             " more moves are made.", mediumFont, white, width // 2, height // 2 - 10, screen)
+                display_text("AI based on the minimax algorithm, intended to be unbeatable.",
+                             mediumFont, white, width // 2, height - 65, screen)
 
-            update_button("play against a friend", centered_rect(width // 2, height // 2 + 60, 175, 50), (0, 0, 215),
+            update_button("play against a friend", centered_rect(width // 2 + 150, height // 2, 175, 50), (0, 0, 215),
                           (0, 0, 255), white, black, mediumFont, screen, action=update_gamestate, arg="twoPlayerGame")
-            update_button("quit", centered_rect(width // 2, height // 2 + 120, 175, 50), (120, 0, 255), (140, 40, 255),
-                          white, black, mediumFont, screen, action=quit)
-            display_text(str(trainingCount) + " training examples have been recorded so far.", mediumFont,
+            update_button("quit", centered_rect(width // 2 + 150, height // 2 + 60, 175, 50), (120, 0, 255),
+                          (140, 40, 255), white, black, mediumFont, screen, action=quit)
+            update_button("Neural Network", centered_rect(width // 2 - 150, height // 2 - 60, 175, 50), (0, 0, 215),
+                          (0, 0, 255), white, white, mediumFont, screen, bw=1, action=change_AI, arg="nn")
+            update_button("Minimax", centered_rect(width // 2 - 150, height // 2, 175, 50), (0, 0, 215),
+                          (0, 0, 255), white, white, mediumFont, screen, bw=1, action=change_AI, arg="minimax")
+            display_text("AI type", mediumFont, white, width // 2 - 150, height // 2 - 105, screen)
+            display_text(str(trainingCount) + " training samples have been recorded so far.", mediumFont,
                          white, width // 2, height - 30, screen)
         elif gameState == "twoPlayerGame" or gameState == "aiGame":
             if victory != 0:
@@ -287,24 +277,42 @@ if __name__ == '__main__':
                     indicatorMsgColor = black
                 display_text(indicatorMsg, mediumFont, indicatorMsgColor, width // 2, 40, screen)
 
+                if aiType == "minimax" and best is not None and victory == 0:
+                    if (best[2] == 1 and not player_first) or (best[2] == -1 and player_first):
+                        display_text("The AI thinks that you will lose", mediumFont, white, width // 2, height - 110,
+                                     screen)
+                    elif best[2] == 0:
+                        display_text("The AI thinks that the game will end in a draw", mediumFont, white, width // 2,
+                                     height - 110, screen)
+                    else:
+                        display_text("The AI thinks that you will win", mediumFont, white, width // 2, height - 110,
+                                     screen)
+
                 if not player_turn and victory == 0:
-                    rawPrediction = ai.make_prediction(model, grid.reshape(1, 9))
-                    prediction = np.argsort(-rawPrediction)
-                    aux = 0
-                    for i in prediction[0]:
-                        aux = aux + 1
-                        row = i // 3
-                        column = i % 3
-                        if grid[int(row)][int(column)] == 0:
-                            if white_turn:
-                                grid[int(row)][int(column)] = 1
-                            else:
-                                grid[int(row)][int(column)] = 2
-                            white_turn = not white_turn  # The turn passes to the other player
-                            player_turn = not player_turn  # The turn passes to the human
-                            victory = check_victory(grid)  # Check if the game has ended
-                            break
-                    print("Prediction number", aux, "selected.")
+                    if aiType == "nn":
+                        rawPrediction = nn.make_prediction(model, grid.reshape(1, 9))
+                        prediction = np.argsort(-rawPrediction)
+                        aux = 0
+                        for i in prediction[0]:
+                            aux = aux + 1
+                            row = i // 3
+                            column = i % 3
+                            if grid[int(row)][int(column)] == 0:
+                                if white_turn:
+                                    grid[int(row)][int(column)] = 1
+                                else:
+                                    grid[int(row)][int(column)] = 2
+                                break
+                        print("Prediction number", aux, "selected.")
+                    elif aiType == "minimax":
+                        best = ai.minimax(grid, (grid == 0).sum(), white_turn)
+                        if white_turn:
+                            grid[best[0]][best[1]] = 1
+                        else:
+                            grid[best[0]][best[1]] = 2
+                    white_turn = not white_turn  # The turn passes to the other player
+                    player_turn = not player_turn  # The turn passes to the human
+                    victory = ai.check_victory(grid)  # Check if the game has ended
 
             display_grid(grid, screen, cellMargin, grid_W, grid_H, margin_X, margin_Y)
 
