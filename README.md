@@ -29,3 +29,4 @@ Algorithm that prioritizes minimizing the possible loss for a worst case (maximu
 
 **In the context of this game, this algorithm is unbeatable, and the most you can expect to achieve is a draw.**
 
+![Preview image](https://raw.githubusercontent.com/alvarosaulrodriguezaleman/tictAItoe/master/preview.png)
