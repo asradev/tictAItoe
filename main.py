@@ -23,7 +23,7 @@ def display_text(text, font, color, center_x, center_y, display):
     display.blit(text_surf, text_rect)
 
 
-def update_button(msg, rect, ic, ac, tc, font, display, action=None, arg=None):
+def update_button(msg, rect, ic, ac, tc, bc, font, display, bw=2, action=None, arg=None):
     """
         Function that displays an interactive button.
         msg:     Text inside the button.
@@ -31,8 +31,10 @@ def update_button(msg, rect, ic, ac, tc, font, display, action=None, arg=None):
         ic:      Color of the button when the mouse is not hovering it.
         ac:      Color of the button when the mouse is hovering it.
         tc:      Color of the text inside the button.
+        bc:      Color of the border of the button.
         font:    Font that the text inside the color will use (pygame.font.Font).
         display: Screen surface that will display the button.
+        bw:      Width in pixels of the border of the button.
         action:  Method to be called when the button is pressed.
         arg:     Argument to be passed to the method determined by the action parameter.
     """
@@ -49,7 +51,16 @@ def update_button(msg, rect, ic, ac, tc, font, display, action=None, arg=None):
     else:
         pg.draw.rect(display, ic, rect)
 
+    pg.draw.rect(display, bc, rect, bw)
+
     display_text(msg, font, tc, rect.x + (rect.w / 2), rect.y + (rect.h / 2), display)
+
+
+# returns a rect object that is centered on x and y
+def centered_rect(x, y, w, h):
+    rect = pg.Rect(0, 0, w, h)
+    rect.center = (x, y)
+    return rect
 
 
 # updates the global gameState with the text provided
@@ -118,9 +129,9 @@ def display_grid(grid, screen, cellMargin, grid_W, grid_H, margin_X, margin_Y):
         for j in range(grid.shape[1]):
             color = (84, 145, 255)
             if grid[i][j] == 1:
-                color = (255, 255, 255)
+                color = white
             elif grid[i][j] == 2:
-                color = (0, 0, 0)
+                color = black
             pg.draw.rect(screen, color,
                          [(cellMargin + grid_W) * j + cellMargin + margin_X,
                           (cellMargin + grid_H) * i + cellMargin + margin_Y,
@@ -168,18 +179,8 @@ if __name__ == '__main__':
     largeFont = pg.font.Font(None, 48)
     mediumFont = pg.font.Font(None, 24)
 
-    aiPlayRect = pg.Rect(0, 0, 175, 50)
-    aiPlayRect.center = (width // 2, height // 2)  # Play against AI button location
-    playRect = pg.Rect(0, 0, 175, 50)
-    playRect.center = (width // 2, height // 2 + 60)  # Play against a friend button location
-    quitRect = pg.Rect(0, 0, 175, 50)
-    quitRect.center = (width // 2, height // 2 + 120)  # Quit button location
-    plotRect = pg.Rect(0, 0, 175, 50)
-    plotRect.center = (width // 2, height // 2 + 180)  # Quit button location
-    restartRect = pg.Rect(0, 0, 175, 50)
-    restartRect.center = (width // 2, height - 110)  # Restart button location
-    menuRect = pg.Rect(0, 0, 175, 50)
-    menuRect.center = (width // 2, height - 50)  # Back to menu button location
+    white = (255, 255, 255)  # constant for white color
+    black = (0, 0, 0)  # constant for black color
 
     '''
         The play grid is a 3x3 matrix. The cell values mean the following:
@@ -236,53 +237,54 @@ if __name__ == '__main__':
             display_text("tictAItoe", largeFont, (0, 0, 255), width // 2, height // 3, screen)
 
             if modelTrained:
-                update_button("play against the AI", aiPlayRect, (0, 195, 255), (18, 206, 255), (255, 255, 255),
-                              mediumFont, screen, action=update_gamestate, arg="aiGame")
-                update_button("plot training results", plotRect, (120, 0, 255), (140, 40, 255), (255, 255, 255),
-                              mediumFont, screen, action=ai.plot_training, arg=modelHistory)
+                update_button("play against the AI", centered_rect(width // 2, height // 2, 175, 50), (0, 195, 255),
+                              (18, 206, 255), white, black, mediumFont, screen, action=update_gamestate, arg="aiGame")
+                update_button("plot training results", centered_rect(width // 2, height // 2 + 180, 175, 50),
+                              (120, 0, 255), (140, 40, 255), white, black, mediumFont, screen, action=ai.plot_training,
+                              arg=modelHistory)
             else:
                 display_text("there are not enough training examples to train the network!", mediumFont,
-                             (255, 255, 255), width // 2, height // 2 - 30, screen)
+                             white, width // 2, height // 2 - 30, screen)
                 display_text("to play against the AI, play against a friend until " + str(50 - trainingCount) +
-                             " more moves are made.", mediumFont, (255, 255, 255), width // 2, height // 2 - 10, screen)
+                             " more moves are made.", mediumFont, white, width // 2, height // 2 - 10, screen)
 
-            update_button("play against a friend", playRect, (0, 0, 215), (0, 0, 255), (255, 255, 255), mediumFont,
-                          screen, action=update_gamestate, arg="twoPlayerGame")
-            update_button("quit", quitRect, (120, 0, 255), (140, 40, 255), (255, 255, 255), mediumFont, screen,
-                          action=quit)
+            update_button("play against a friend", centered_rect(width // 2, height // 2 + 60, 175, 50), (0, 0, 215),
+                          (0, 0, 255), white, black, mediumFont, screen, action=update_gamestate, arg="twoPlayerGame")
+            update_button("quit", centered_rect(width // 2, height // 2 + 120, 175, 50), (120, 0, 255), (140, 40, 255),
+                          white, black, mediumFont, screen, action=quit)
             display_text(str(trainingCount) + " training examples have been recorded so far.", mediumFont,
-                         (255, 255, 255), width // 2, height - 30, screen)
+                         white, width // 2, height - 30, screen)
         elif gameState == "twoPlayerGame" or gameState == "aiGame":
             if victory != 0:
                 if victory == 1:
                     turnMsg = "White wins!"
-                    turnMsgColor = (255, 255, 255)
+                    turnMsgColor = white
                 elif victory == 2:
                     turnMsg = "Black wins!"
-                    turnMsgColor = (0, 0, 0)
+                    turnMsgColor = black
                 else:
                     turnMsg = "Draw"
                     turnMsgColor = (0, 0, 255)
 
-                update_button("restart", restartRect, (0, 0, 215), (0, 0, 255), (255, 255, 255), mediumFont, screen,
-                              action=restart)
-                update_button("back to main menu", menuRect, (120, 0, 215), (140, 40, 255), (255, 255, 255), mediumFont,
-                              screen, action=update_gamestate, arg="title")
+                update_button("restart", centered_rect(width // 2, height - 110, 175, 50), (0, 0, 215), (0, 0, 255),
+                              white, black, mediumFont, screen, action=restart)
+                update_button("back to main menu", centered_rect(width // 2, height - 50, 175, 50), (120, 0, 215),
+                              (140, 40, 255), white, black, mediumFont, screen, action=update_gamestate, arg="title")
             elif white_turn:
                 turnMsg = "it's White's turn"
-                turnMsgColor = (255, 255, 255)
+                turnMsgColor = white
             else:
                 turnMsg = "it's Black's turn"
-                turnMsgColor = (0, 0, 0)
+                turnMsgColor = black
             display_text(turnMsg, largeFont, turnMsgColor, width // 2, height // 7, screen)
 
             if gameState == "aiGame":
                 if player_first:
                     indicatorMsg = "you play as White"
-                    indicatorMsgColor = (255, 255, 255)
+                    indicatorMsgColor = white
                 else:
                     indicatorMsg = "you play as Black"
-                    indicatorMsgColor = (0, 0, 0)
+                    indicatorMsgColor = black
                 display_text(indicatorMsg, mediumFont, indicatorMsgColor, width // 2, 40, screen)
 
                 if not player_turn and victory == 0:
