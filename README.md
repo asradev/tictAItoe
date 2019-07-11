@@ -21,7 +21,7 @@ The neural network has the following architecture:
 
 Everytime a human player inputs a move, the board state and the cell that the player selected are logged into the database files for later training. Each line in the xvalues.txt represents a board state (0 = empty cell, 1 = white cell, 2 = black cell), and each corresponding line in yvalues.txt represents the cell selected (values from 0 to 8, 0 represents the top-left cell, and 8 represents the bottom-right cell)
 
-**The AI is constantly learning, everytime a game is restarted, the neural network is trained with the new data.**
+**The AI does not know how to win, or even what a win means. It just tries to mimic how the player would play at any given state of the game.** The AI is constantly learning, everytime a game is restarted, the neural network is trained with the new data.
 
 ## Minimax
 
