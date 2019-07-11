@@ -9,14 +9,12 @@ The neural network has the following architecture:
 
 ```python
     model = Sequential()
-    model.add(Dense(10, input_shape=(9,), activation="relu"))
-    model.add(Dense(10, activation="relu"))
-    model.add(Dense(10, activation="relu"))
+    model.add(Dense(18, input_shape=(9,), activation="relu"))
+    model.add(Dense(18, activation="relu"))
+    model.add(Dense(9, activation="relu"))
     model.add(Dense(9, activation="softmax"))
 
-    model.compile(loss=categorical_crossentropy,
-                  optimizer=Adam(),
-                  metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 ```
 
 Everytime a human player inputs a move, the board state and the cell that the player selected are logged into the database files for later training. Each line in the xvalues.txt represents a board state (0 = empty cell, 1 = white cell, 2 = black cell), and each corresponding line in yvalues.txt represents the cell selected (values from 0 to 8, 0 represents the top-left cell, and 8 represents the bottom-right cell)
