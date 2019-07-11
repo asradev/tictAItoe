@@ -24,7 +24,7 @@ def display_text(text, font, color, center_x, center_y, display):
     display.blit(text_surf, text_rect)
 
 
-def update_button(msg, rect, ic, ac, tc, bc, font, display, bw=2, action=None, arg=None):
+def update_button(msg, rect, ic, ac, tc, bc, font, display, mouse, bw=2, action=None, arg=None):
     """
         Function that displays an interactive button.
         msg:     Text inside the button.
@@ -81,7 +81,7 @@ def update_gamestate(text):
 def restart():
     global grid, victory, white_turn, player_turn, player_first, model, modelHistory, modelTrained, trainingCount, best
     grid = np.zeros((grid.shape[0], grid.shape[1]))
-    victory = 0
+    victory = None
     white_turn = True
     player_turn = bool(random.getrandbits(1))
     player_first = player_turn
@@ -146,12 +146,12 @@ if __name__ == '__main__':
     '''
         The possible victory values are the following:
     
-        victory = 0     -> Game has not ended
-        victory = 1     -> White has won
-        victory = 2     -> Black has won
-        victory = -1    -> Game has ended in a draw
+        victory = None     -> Game has not ended
+        victory = "white"  -> White has won
+        victory = "black"  -> Black has won
+        victory = "draw"   -> Game has ended in a draw
     '''
-    victory = 0
+    victory = None
 
     largeFont = pg.font.Font(None, 48)
     mediumFont = pg.font.Font(None, 24)
@@ -192,7 +192,7 @@ if __name__ == '__main__':
                     column = (mouse[0] - margin_X) // (grid_W + cellMargin)
                     # check if it's an empty cell inside the grid and if the game has not finished yet
                     if 0 <= row < grid.shape[0] and 0 <= column < grid.shape[1] and grid[int(row)][int(column)] == 0 \
-                            and victory == 0:
+                            and victory is None:
                         if logging:
                             with open('xvalues.txt', 'a+') as outfile:
                                 grid.tofile(outfile, sep=" ")
@@ -215,10 +215,10 @@ if __name__ == '__main__':
             if aiType == "nn":
                 if modelTrained:
                     update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
-                                  (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen,
+                                  (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen, mouse,
                                   action=update_gamestate, arg="aiGame")
                     update_button("plot training results", centered_rect(width // 2 + 150, height // 2 + 120, 175, 50),
-                                  (120, 0, 255), (140, 40, 255), white, black, mediumFont, screen,
+                                  (120, 0, 255), (140, 40, 255), white, black, mediumFont, screen, mouse,
                                   action=nn.plot_training, arg=modelHistory)
                 else:
                     display_text("there are not enough training samples to train the network!", mediumFont,
@@ -228,38 +228,40 @@ if __name__ == '__main__':
                 display_text("AI based on a neural network, will play better as the training samples grow in size.",
                              mediumFont, white, width // 2, height - 65, screen)
             if aiType == "minimax":
-                update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50), (0, 195, 255),
-                              (18, 206, 255), white, black, mediumFont, screen, action=update_gamestate, arg="aiGame")
+                update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
+                              (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen, mouse,
+                              action=update_gamestate, arg="aiGame")
                 display_text("AI based on the minimax algorithm, intended to be unbeatable.",
                              mediumFont, white, width // 2, height - 65, screen)
 
             update_button("play against a friend", centered_rect(width // 2 + 150, height // 2, 175, 50), (0, 0, 215),
-                          (0, 0, 255), white, black, mediumFont, screen, action=update_gamestate, arg="twoPlayerGame")
+                          (0, 0, 255), white, black, mediumFont, screen, mouse, action=update_gamestate,
+                          arg="twoPlayerGame")
             update_button("quit", centered_rect(width // 2 + 150, height // 2 + 60, 175, 50), (120, 0, 255),
-                          (140, 40, 255), white, black, mediumFont, screen, action=quit)
+                          (140, 40, 255), white, black, mediumFont, screen, mouse, action=quit)
             update_button("Neural Network", centered_rect(width // 2 - 150, height // 2 - 60, 175, 50), (0, 0, 215),
-                          (0, 0, 255), white, white, mediumFont, screen, bw=1, action=change_AI, arg="nn")
+                          (0, 0, 255), white, white, mediumFont, screen, mouse, bw=1, action=change_AI, arg="nn")
             update_button("Minimax", centered_rect(width // 2 - 150, height // 2, 175, 50), (0, 0, 215),
-                          (0, 0, 255), white, white, mediumFont, screen, bw=1, action=change_AI, arg="minimax")
+                          (0, 0, 255), white, white, mediumFont, screen, mouse, bw=1, action=change_AI, arg="minimax")
             display_text("AI type", mediumFont, white, width // 2 - 150, height // 2 - 105, screen)
             display_text(str(trainingCount) + " training samples have been recorded so far.", mediumFont,
                          white, width // 2, height - 30, screen)
         elif gameState == "twoPlayerGame" or gameState == "aiGame":
-            if victory != 0:
-                if victory == 1:
-                    turnMsg = "White wins!"
+            if victory is not None:
+                turnMsg = victory + " wins!"
+                if victory == "white":
                     turnMsgColor = white
-                elif victory == 2:
-                    turnMsg = "Black wins!"
+                elif victory == "black":
                     turnMsgColor = black
                 else:
                     turnMsg = "Draw"
                     turnMsgColor = (0, 0, 255)
 
                 update_button("restart", centered_rect(width // 2, height - 110, 175, 50), (0, 0, 215), (0, 0, 255),
-                              white, black, mediumFont, screen, action=restart)
+                              white, black, mediumFont, screen, mouse, action=restart)
                 update_button("back to main menu", centered_rect(width // 2, height - 50, 175, 50), (120, 0, 215),
-                              (140, 40, 255), white, black, mediumFont, screen, action=update_gamestate, arg="title")
+                              (140, 40, 255), white, black, mediumFont, screen, mouse, action=update_gamestate,
+                              arg="title")
             elif white_turn:
                 turnMsg = "it's White's turn"
                 turnMsgColor = white
@@ -277,7 +279,7 @@ if __name__ == '__main__':
                     indicatorMsgColor = black
                 display_text(indicatorMsg, mediumFont, indicatorMsgColor, width // 2, 40, screen)
 
-                if aiType == "minimax" and best is not None and victory == 0:
+                if aiType == "minimax" and best is not None and victory is None:
                     if (best[2] == 1 and not player_first) or (best[2] == -1 and player_first):
                         display_text("The AI thinks that you will lose", mediumFont, white, width // 2, height - 110,
                                      screen)
@@ -288,7 +290,7 @@ if __name__ == '__main__':
                         display_text("The AI thinks that you will win", mediumFont, white, width // 2, height - 110,
                                      screen)
 
-                if not player_turn and victory == 0:
+                if not player_turn and victory is None:
                     if aiType == "nn":
                         rawPrediction = nn.make_prediction(model, grid.reshape(1, 9))
                         prediction = np.argsort(-rawPrediction)

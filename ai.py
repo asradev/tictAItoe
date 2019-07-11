@@ -1,13 +1,14 @@
 from math import inf as infinity
+import numpy as np
 
 
 # checks the play grid to see if the game has ended
 def check_victory(g):
-    v = 0
+    v = None
 
     # check if all spaces have been selected
     if g.min() != 0:
-        v = -1  # the game is a draw
+        v = "draw"  # the game is a draw
 
     # check if there is any horizontal, vertical or diagonal line
     win_state = [
@@ -22,17 +23,17 @@ def check_victory(g):
     ]
 
     if [1, 1, 1] in win_state:
-        return 1  # white wins
+        return "white"  # white wins
     elif [2, 2, 2] in win_state:
-        return 2  # black wins
+        return "black"  # black wins
     return v
 
 
 # heuristic for the minimax algorithm
 def evaluate(state):
-    if check_victory(state) == 1:
+    if check_victory(state) == "white":
         score = +1
-    elif check_victory(state) == 2:
+    elif check_victory(state) == "black":
         score = -1
     else:
         score = 0
@@ -54,22 +55,21 @@ def minimax(state, depth, white_turn):
         return [-1, -1, score]
 
     # iterate through every empty cell
-    for i in range(state.shape[0]):
-        for j in range(state.shape[1]):
-            if state[i][j] == 0:
-                if white_turn:
-                    state[i][j] = 1
-                else:
-                    state[i][j] = 2
-                score = minimax(state, depth - 1, not white_turn)
-                state[i][j] = 0
-                score[0], score[1] = i, j
+    moves = [s for s, v in np.ndenumerate(state) if v == 0]
+    for x in moves:
+        if white_turn:
+            state[x] = 1
+        else:
+            state[x] = 2
+        score = minimax(state, depth - 1, not white_turn)
+        state[x] = 0
+        score[0], score[1] = x[0], x[1]
 
-                if white_turn:
-                    if score[2] > best[2]:
-                        best = score  # max value
-                else:
-                    if score[2] < best[2]:
-                        best = score  # min value
+        if white_turn:
+            if score[2] > best[2]:
+                best = score  # max value
+        else:
+            if score[2] < best[2]:
+                best = score  # min value
 
     return best
