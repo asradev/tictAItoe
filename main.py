@@ -4,57 +4,9 @@ import random
 import numpy as np
 import pygame as pg
 
+import utils as ut
 import nn
 import ai
-
-
-def display_text(text, font, color, center_x, center_y, display):
-    """
-        Function that displays text on the screen.
-        text:       Text to display.
-        font:       Font that the text fill use.
-        color:      Color of the text to display.
-        center_x:   Horizontal coordinate of the center of the text box.
-        center_y:   Vertical coordinate of the center of the text box.
-        display:    Screen surface that will display the text.
-    """
-    text_surf = font.render(text, True, color)
-    text_rect = text_surf.get_rect()
-    text_rect.center = center_x, center_y
-    display.blit(text_surf, text_rect)
-
-
-def update_button(msg, rect, ic, ac, tc, bc, font, display, mouse, bw=2, action=None, arg=None):
-    """
-        Function that displays an interactive button.
-        msg:     Text inside the button.
-        rect:    pygame.Rect object of the size of the desired button.
-        ic:      Color of the button when the mouse is not hovering it.
-        ac:      Color of the button when the mouse is hovering it.
-        tc:      Color of the text inside the button.
-        bc:      Color of the border of the button.
-        font:    Font that the text inside the color will use (pygame.font.Font).
-        display: Screen surface that will display the button.
-        bw:      Width in pixels of the border of the button.
-        action:  Method to be called when the button is pressed.
-        arg:     Argument to be passed to the method determined by the action parameter.
-    """
-    click = pg.mouse.get_pressed()
-
-    if rect.x + rect.w > mouse[0] > rect.x and rect.y + rect.h > mouse[1] > rect.y:
-        pg.draw.rect(display, ac, rect)
-
-        if click[0] == 1 and action is not None:
-            if arg is not None:
-                action(arg)
-            else:
-                action()
-    else:
-        pg.draw.rect(display, ic, rect)
-
-    pg.draw.rect(display, bc, rect, bw)
-
-    display_text(msg, font, tc, rect.x + (rect.w / 2), rect.y + (rect.h / 2), display)
 
 
 # returns a rect object that is centered on x and y
@@ -65,13 +17,13 @@ def centered_rect(x, y, w, h):
 
 
 # updates the AI type to play against
-def change_AI(text):
+def change_ai(text):
     global aiType
     aiType = text
 
 
 # updates the global gameState with the text provided
-def update_gamestate(text):
+def update_game_state(text):
     global gameState
     gameState = text
     restart()
@@ -90,22 +42,6 @@ def restart():
     if logging and (modelTrained or not modelTrained and trainingCount >= 50):
         model, modelHistory = nn.train_model(model, 100)
         modelTrained = True
-
-
-# display the play grid
-def display_grid(grid, screen, cellMargin, grid_W, grid_H, margin_X, margin_Y):
-    for i in range(grid.shape[0]):
-        for j in range(grid.shape[1]):
-            color = (84, 145, 255)
-            if grid[i][j] == 1:
-                color = white
-            elif grid[i][j] == 2:
-                color = black
-            pg.draw.rect(screen, color,
-                         [(cellMargin + grid_W) * j + cellMargin + margin_X,
-                          (cellMargin + grid_H) * i + cellMargin + margin_Y,
-                          grid_W,
-                          grid_H])
 
 
 if __name__ == '__main__':
@@ -175,6 +111,7 @@ if __name__ == '__main__':
     player_turn = True  # Indicates if it's the player's turn (in a game vs AI)
     player_first = player_turn
 
+    # game loop
     while True:
         mouse = pg.mouse.get_pos()  # mouse position
         screen.fill((66, 134, 244))  # set screen background color
@@ -209,43 +146,46 @@ if __name__ == '__main__':
                         white_turn = not white_turn  # The turn passes to the other player
                         player_turn = not player_turn  # The turn passes to the AI
                         victory = ai.check_victory(grid)  # Check if the game has ended
+
         if gameState == "title":
-            display_text("tictAItoe", largeFont, (0, 0, 255), width // 2, height // 4, screen)
+            ut.display_text("tictAItoe", largeFont, (0, 0, 255), width // 2, height // 4, screen)
 
             if aiType == "nn":
                 if modelTrained:
-                    update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
-                                  (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen, mouse,
-                                  action=update_gamestate, arg="aiGame")
-                    update_button("plot training results", centered_rect(width // 2 + 150, height // 2 + 120, 175, 50),
-                                  (120, 0, 255), (140, 40, 255), white, black, mediumFont, screen, mouse,
-                                  action=nn.plot_training, arg=modelHistory)
+                    ut.update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
+                                     (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen, mouse,
+                                     action=update_game_state, arg="aiGame")
+                    ut.update_button("plot training results",
+                                     centered_rect(width // 2 + 150, height // 2 + 120, 175, 50), (120, 0, 255),
+                                     (140, 40, 255), white, black, mediumFont, screen, mouse,
+                                     action=nn.plot_training, arg=modelHistory)
                 else:
-                    display_text("there are not enough training samples to train the network!", mediumFont,
-                                 white, width // 2, height // 2 - 30, screen)
-                    display_text("to play against the AI, play against a friend until " + str(50 - trainingCount) +
-                                 " more moves are made.", mediumFont, white, width // 2, height // 2 - 10, screen)
-                display_text("AI based on a neural network, will play better as the training samples grow in size.",
-                             mediumFont, white, width // 2, height - 65, screen)
+                    ut.display_text("there are not enough training samples to train the network!", mediumFont,
+                                    white, width // 2, height // 2 - 30, screen)
+                    ut.display_text("to play against the AI, play against a friend until " + str(50 - trainingCount) +
+                                    " more moves are made.", mediumFont, white, width // 2, height // 2 - 10, screen)
+                ut.display_text("AI based on a neural network, will play better as the training samples grow in size.",
+                                mediumFont, white, width // 2, height - 65, screen)
             if aiType == "minimax":
-                update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
-                              (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen, mouse,
-                              action=update_gamestate, arg="aiGame")
-                display_text("AI based on the minimax algorithm, intended to be unbeatable.",
-                             mediumFont, white, width // 2, height - 65, screen)
+                ut.update_button("play against the AI", centered_rect(width // 2 + 150, height // 2 - 60, 175, 50),
+                                 (0, 195, 255), (18, 206, 255), white, black, mediumFont, screen, mouse,
+                                 action=update_game_state, arg="aiGame")
+                ut.display_text("AI based on the minimax algorithm, intended to be unbeatable.",
+                                mediumFont, white, width // 2, height - 65, screen)
 
-            update_button("play against a friend", centered_rect(width // 2 + 150, height // 2, 175, 50), (0, 0, 215),
-                          (0, 0, 255), white, black, mediumFont, screen, mouse, action=update_gamestate,
-                          arg="twoPlayerGame")
-            update_button("quit", centered_rect(width // 2 + 150, height // 2 + 60, 175, 50), (120, 0, 255),
-                          (140, 40, 255), white, black, mediumFont, screen, mouse, action=quit)
-            update_button("Neural Network", centered_rect(width // 2 - 150, height // 2 - 60, 175, 50), (0, 0, 215),
-                          (0, 0, 255), white, white, mediumFont, screen, mouse, bw=1, action=change_AI, arg="nn")
-            update_button("Minimax", centered_rect(width // 2 - 150, height // 2, 175, 50), (0, 0, 215),
-                          (0, 0, 255), white, white, mediumFont, screen, mouse, bw=1, action=change_AI, arg="minimax")
-            display_text("AI type", mediumFont, white, width // 2 - 150, height // 2 - 105, screen)
-            display_text(str(trainingCount) + " training samples have been recorded so far.", mediumFont,
-                         white, width // 2, height - 30, screen)
+            ut.update_button("play against a friend", centered_rect(width // 2 + 150, height // 2, 175, 50),
+                             (0, 0, 215), (0, 0, 255), white, black, mediumFont, screen, mouse,
+                             action=update_game_state, arg="twoPlayerGame")
+            ut.update_button("quit", centered_rect(width // 2 + 150, height // 2 + 60, 175, 50), (120, 0, 255),
+                             (140, 40, 255), white, black, mediumFont, screen, mouse, action=quit)
+            ut.update_button("Neural Network", centered_rect(width // 2 - 150, height // 2 - 60, 175, 50), (0, 0, 215),
+                             (0, 0, 255), white, white, mediumFont, screen, mouse, bw=1, action=change_ai, arg="nn")
+            ut.update_button("Minimax", centered_rect(width // 2 - 150, height // 2, 175, 50), (0, 0, 215),
+                             (0, 0, 255), white, white, mediumFont, screen, mouse, bw=1, action=change_ai,
+                             arg="minimax")
+            ut.display_text("AI type", mediumFont, white, width // 2 - 150, height // 2 - 105, screen)
+            ut.display_text(str(trainingCount) + " training samples have been recorded so far.", mediumFont,
+                            white, width // 2, height - 30, screen)
         elif gameState == "twoPlayerGame" or gameState == "aiGame":
             if victory is not None:
                 turnMsg = victory + " wins!"
@@ -257,18 +197,18 @@ if __name__ == '__main__':
                     turnMsg = "Draw"
                     turnMsgColor = (0, 0, 255)
 
-                update_button("restart", centered_rect(width // 2, height - 110, 175, 50), (0, 0, 215), (0, 0, 255),
-                              white, black, mediumFont, screen, mouse, action=restart)
-                update_button("back to main menu", centered_rect(width // 2, height - 50, 175, 50), (120, 0, 215),
-                              (140, 40, 255), white, black, mediumFont, screen, mouse, action=update_gamestate,
-                              arg="title")
+                ut.update_button("restart", centered_rect(width // 2, height - 110, 175, 50), (0, 0, 215), (0, 0, 255),
+                                 white, black, mediumFont, screen, mouse, action=restart)
+                ut.update_button("back to main menu", centered_rect(width // 2, height - 50, 175, 50), (120, 0, 215),
+                                 (140, 40, 255), white, black, mediumFont, screen, mouse, action=update_game_state,
+                                 arg="title")
             elif white_turn:
                 turnMsg = "it's White's turn"
                 turnMsgColor = white
             else:
                 turnMsg = "it's Black's turn"
                 turnMsgColor = black
-            display_text(turnMsg, largeFont, turnMsgColor, width // 2, height // 7, screen)
+            ut.display_text(turnMsg, largeFont, turnMsgColor, width // 2, height // 7, screen)
 
             if gameState == "aiGame":
                 if player_first:
@@ -277,18 +217,18 @@ if __name__ == '__main__':
                 else:
                     indicatorMsg = "you play as Black"
                     indicatorMsgColor = black
-                display_text(indicatorMsg, mediumFont, indicatorMsgColor, width // 2, 40, screen)
+                ut.display_text(indicatorMsg, mediumFont, indicatorMsgColor, width // 2, 40, screen)
 
                 if aiType == "minimax" and best is not None and victory is None:
                     if (best[2] == 1 and not player_first) or (best[2] == -1 and player_first):
-                        display_text("The AI thinks that you will lose", mediumFont, white, width // 2, height - 110,
-                                     screen)
+                        ut.display_text("The AI thinks that you will lose", mediumFont, white, width // 2, height - 110,
+                                        screen)
                     elif best[2] == 0:
-                        display_text("The AI thinks that the game will end in a draw", mediumFont, white, width // 2,
-                                     height - 110, screen)
+                        ut.display_text("The AI thinks that the game will end in a draw", mediumFont, white, width // 2,
+                                        height - 110, screen)
                     else:
-                        display_text("The AI thinks that you will win", mediumFont, white, width // 2, height - 110,
-                                     screen)
+                        ut.display_text("The AI thinks that you will win", mediumFont, white, width // 2, height - 110,
+                                        screen)
 
                 if not player_turn and victory is None:
                     if aiType == "nn":
@@ -316,6 +256,6 @@ if __name__ == '__main__':
                     player_turn = not player_turn  # The turn passes to the human
                     victory = ai.check_victory(grid)  # Check if the game has ended
 
-            display_grid(grid, screen, cellMargin, grid_W, grid_H, margin_X, margin_Y)
+            ut.display_grid(grid, screen, mouse, cellMargin, grid_W, grid_H, margin_X, margin_Y)
 
         pg.display.flip()

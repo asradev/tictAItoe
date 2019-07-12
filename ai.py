@@ -1,5 +1,5 @@
-from math import inf as infinity
 import numpy as np
+from math import inf as infinity
 
 
 # checks the play grid to see if the game has ended
