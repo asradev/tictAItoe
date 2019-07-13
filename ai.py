@@ -73,3 +73,13 @@ def minimax(state, depth, white_turn):
                 best = score  # min value
 
     return best
+
+
+def make_move_minimax(grid, white_turn):
+    best = minimax(grid, (grid == 0).sum(), white_turn)
+    new_grid = np.copy(grid)
+    if white_turn:
+        new_grid[best[0]][best[1]] = 1
+    else:
+        new_grid[best[0]][best[1]] = 2
+    return new_grid, best

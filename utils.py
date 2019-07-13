@@ -18,7 +18,7 @@ def display_text(text, font, color, center_x, center_y, display):
     display.blit(text_surf, text_rect)
     
 
-def update_button(msg, rect, ic, ac, tc, bc, font, display, mouse, bw=2, action=None, arg=None):
+def button(msg, rect, ic, ac, tc, display, mouse, bc=(0,0,0), font=None, bw=2, action=None, arg=None):
     """
         Function that displays an interactive button.
         msg:     Text inside the button.
@@ -26,14 +26,18 @@ def update_button(msg, rect, ic, ac, tc, bc, font, display, mouse, bw=2, action=
         ic:      Color of the button when the mouse is not hovering it.
         ac:      Color of the button when the mouse is hovering it.
         tc:      Color of the text inside the button.
-        bc:      Color of the border of the button.
-        font:    Font that the text inside the color will use (pygame.font.Font).
         display: Screen surface that will display the button.
+        mouse:   Mouse position
+        bc:      Color of the border of the button. Black by default.
+        font:    Font that the text inside the color will use (pygame.font.Font).
         bw:      Width in pixels of the border of the button.
         action:  Method to be called when the button is pressed.
         arg:     Argument to be passed to the method determined by the action parameter.
     """
     click = pg.mouse.get_pressed()
+
+    if font is None:
+        font = pg.font.Font(None, 24)
 
     if rect.x + rect.w > mouse[0] > rect.x and rect.y + rect.h > mouse[1] > rect.y:
         pg.draw.rect(display, ac, rect)

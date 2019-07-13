@@ -13,15 +13,13 @@ def create_model():
     model.add(Dense(9, activation="softmax"))
 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    print(model.summary())
 
     return model
 
 
 def train_model(model, epochs):
-    x_train = np.loadtxt("xvalues.txt")
-    print(x_train.shape)
-    y_train = to_categorical(np.loadtxt("yvalues.txt"))
+    x_train = np.loadtxt("datasets/xvalues.txt")
+    y_train = to_categorical(np.loadtxt("datasets/yvalues.txt"))
 
     model_history = model.fit(x_train, y_train, epochs=epochs, verbose=0, shuffle=True)
 
@@ -30,6 +28,25 @@ def train_model(model, epochs):
 
 def make_prediction(model, x):
     return model.predict(x)
+
+
+def make_move(model, grid, white_turn):
+    raw_prediction = make_prediction(model, grid.reshape(1, 9))
+    prediction = np.argsort(-raw_prediction)
+    aux = 0
+    new_grid = np.copy(grid)
+    for i in prediction[0]:
+        aux = aux + 1
+        row = i // 3
+        column = i % 3
+        if new_grid[int(row)][int(column)] == 0:
+            if white_turn:
+                new_grid[int(row)][int(column)] = 1
+            else:
+                new_grid[int(row)][int(column)] = 2
+            break
+    print("Prediction number", aux, "selected.")
+    return new_grid
 
 
 def plot_training(model_history):
